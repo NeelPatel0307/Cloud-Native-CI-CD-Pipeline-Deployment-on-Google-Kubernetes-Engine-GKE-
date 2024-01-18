@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: container-1-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: container-1-app
+  template:
+    metadata:
+      labels:
+        app: container-1-app
+    spec:
+      volumes:
+        - name: my-volume
+          persistentVolumeClaim:
+            claimName: my-pvc
+      containers:
+        - name: container1
+          image: us-central1-docker.pkg.dev/mycloud5409/my-image-repo/container1:latest
+          ports:
+            - containerPort: 6000
+          volumeMounts:
+            - name: my-volume
+              mountPath: /neel_PV_dir
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: container-2-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: container-2-app
+  template:
+    metadata:
+      labels:
+        app: container-2-app
+    spec:
+      volumes:
+        - name: my-volume
+          persistentVolumeClaim:
+            claimName: my-pvc
+      containers:
+        - name: container2
+          image: us-central1-docker.pkg.dev/mycloud5409/my-image-container2/container2:latest
+          ports:
+            - containerPort: 6001
+          volumeMounts:
+            - name: my-volume
+              mountPath: /neel_PV_dir
+
+
+
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: container-1-service
+spec:
+  selector:
+    app: container-1-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 6000
+  type: LoadBalancer
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: container-2-service
+spec:
+  selector:
+    app: container-2-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 6001
+  type: LoadBalancer
